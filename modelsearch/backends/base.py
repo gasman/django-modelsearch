@@ -9,7 +9,12 @@ from django.db.models.lookups import Lookup
 from django.db.models.query import QuerySet
 from django.db.models.sql.where import NothingNode, WhereNode
 
-from modelsearch.index import class_is_indexed, get_indexed_models
+from modelsearch.index import (
+    FilterField,
+    RelatedFields,
+    class_is_indexed,
+    get_indexed_models,
+)
 from modelsearch.query import MATCH_ALL, PlainText
 
 
@@ -81,6 +86,97 @@ class BaseSearchQueryCompiler:
 
         return field
 
+    def _get_filter_field_for_column(self, column):
+        """
+        Given a `django.db.models.expressions.Col` instance representing a field being filtered on -
+        potentially spanning one or more relations - returns the corresponding `index.FilterField`
+        instance for that field, or `None` if there isn't one.
+        """
+        # Get the list of aliases for the joined tables linking column.alias (i.e. the table containing
+        # the column we're filtering on) back to the base table.
+        next_alias = column.alias
+        table_aliases = []
+        while next_alias is not None:
+            table_aliases.append(next_alias)
+            next_alias = self.queryset.query.alias_map[next_alias].parent_alias
+
+        # Remove the base table from the list; this corresponds to the base model of the queryset.
+        # All remaining aliases in the list are joins.
+        table_aliases.pop()
+
+        # The model corresponding to the table currently under consideration. We keep track of this so that we can call
+        # search_field.get_field(model) to retrieve the corresponding Django model field.
+        model = self.queryset.model
+
+        # The search_fields definition for the table currently under consideration. Initially this is the base model's
+        # search_fields list, but as we follow the chain of joins we may descend into RelatedFields definitions.
+        search_fields = model.get_search_fields()
+
+        while table_aliases:
+            # Inspect the next join in the chain
+            table_alias = table_aliases.pop()
+            table = self.queryset.query.alias_map[table_alias]
+            join_field = table.join_field
+
+            if join_field.one_to_one and getattr(
+                join_field.remote_field, "parent_link", False
+            ):
+                # This is a join to a parent model in a multi-table inheritance setup.
+                #
+                # Example 1: `Restaurant.objects.filter(name="Pizza Hut")` where name is a field on Restaurant's parent model Place.
+                # Here, the base table is Restaurant, and we are joining to the Place table to access the `name` field.
+                # However, the ORM presents this as if it were a field of Restaurant, and thus we expect to find FilterField("name")
+                # in Restaurant.search_fields - not nested inside a RelatedFields entry as we would for other kinds of relation.
+                # Our search_fields pointer is therefore unchanged in this step.
+
+                # Example 2: `Character.objects.filter(novel__title="The Lord of the Rings")` where title is a field on Novel's parent model Book.
+                # In the first iteration we have followed the relation from Character to Novel; `model` is now Novel and `search_fields` is the
+                # list of fields within RelatedFields("novel") in Character's search_fields. We are now handling the join to the Book model to
+                # access the `title` field - again, this step does not change `search_fields`, as we still expect to find FilterField("title")
+                # in the RelatedFields("novel") list.
+                pass
+            else:
+                # This join corresponds to a relation such as a ForeignKey or ManyToManyField -
+                # look for a RelatedFields entry in search_fields that corresponds to this relation.
+                for search_field in search_fields:
+                    if not isinstance(search_field, RelatedFields):
+                        continue
+
+                    field = search_field.get_field(model)
+                    if field == join_field:
+                        # This RelatedFields entry corresponds to the join we're following -
+                        # update `model` and `search_fields` to descend into this RelatedFields definition.
+                        model = field.related_model
+                        search_fields = search_field.fields
+                        break
+
+                    if (
+                        field.many_to_many
+                        and field.path_infos[0].join_field == join_field
+                    ):
+                        # This join matches the first half of the M2M relation referenced by this RelatedFields entry -
+                        # if the next join matches the second half, consume them both and descend into this RelatedFields definition.
+                        if table_aliases:
+                            table2 = self.queryset.query.alias_map[table_aliases[-1]]
+                            if table2.join_field == field.path_infos[1].join_field:
+                                table_aliases.pop()
+                                model = field.related_model
+                                search_fields = search_field.fields
+                                break
+
+                else:
+                    # no matching RelatedFields entry found
+                    return None
+
+        # All joins have now been traversed, and `model` and `search_fields` now correspond to the table being filtered on.
+        # Look for a FilterField entry for the column in this search_fields list.
+        for search_field in search_fields:
+            if (
+                isinstance(search_field, FilterField)
+                and search_field.get_attname(model) == column.target.attname
+            ):
+                return search_field
+
     def _process_lookup(self, field, lookup, value):
         """
         To be implemented by subclasses if they wish to call ``_get_filters_from_queryset`` with
@@ -111,11 +207,12 @@ class BaseSearchQueryCompiler:
         """
         raise NotImplementedError
 
-    def _process_filter(self, field_attname, lookup, value, check_only=False):
+    def _process_filter(self, column, lookup, value, check_only=False):
         # Get the field
-        field = self._get_filterable_field(field_attname)
+        field = self._get_filter_field_for_column(column)
 
         if field is None:
+            field_attname = column.target.attname
             raise FilterFieldError(
                 f'Cannot filter search results with field "{field_attname}". Please add index.FilterField("{field_attname}") to {self.queryset.model.__name__}.search_fields.',
                 field_name=field_attname,
@@ -126,6 +223,7 @@ class BaseSearchQueryCompiler:
             result = self._process_lookup(field, lookup, value)
 
             if result is None:
+                field_attname = column.target.attname
                 raise FilterError(
                     f'Could not apply filter on search results: "{field_attname}__{lookup} = {value}". Lookup "{lookup}" not recognised.'
                 )
@@ -151,7 +249,7 @@ class BaseSearchQueryCompiler:
                         f'Cannot apply filter on search results: "{where_node.lhs.lookup_name}" queries are not supported.'
                     )
                 else:
-                    field_attname = where_node.lhs.lhs.target.attname
+                    column = where_node.lhs.lhs
                     lookup = where_node.lookup_name
                     if lookup == "gte":
                         # filter on year(date) >= value
@@ -175,13 +273,13 @@ class BaseSearchQueryCompiler:
                         # filter on year(date) == value
                         # i.e. date >= Jan 1st of that year and date < Jan 1st of the next year
                         filter1 = self._process_filter(
-                            field_attname,
+                            column,
                             "gte",
                             datetime.date(int(where_node.rhs), 1, 1),
                             check_only=check_only,
                         )
                         filter2 = self._process_filter(
-                            field_attname,
+                            column,
                             "lt",
                             datetime.date(int(where_node.rhs) + 1, 1, 1),
                             check_only=check_only,
@@ -197,18 +295,16 @@ class BaseSearchQueryCompiler:
                             f'Cannot apply filter on search results: "{where_node.lhs.lookup_name}" queries are not supported.'
                         )
             else:
-                field_attname = where_node.lhs.target.attname
+                column = where_node.lhs
                 lookup = where_node.lookup_name
                 value = where_node.rhs
 
             # Ignore pointer fields that show up in specific page type queries
-            if field_attname.endswith("_ptr_id"):
+            if column.target.attname.endswith("_ptr_id"):
                 return
 
             # Process the filter
-            return self._process_filter(
-                field_attname, lookup, value, check_only=check_only
-            )
+            return self._process_filter(column, lookup, value, check_only=check_only)
 
         elif isinstance(where_node, NothingNode):
             if check_only:
