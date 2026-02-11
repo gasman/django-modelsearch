@@ -16,14 +16,14 @@ def main():
         help="Specify the search backend (db, elasticsearch7, elasticsearch8, elasticsearch9, opensearch2, opensearch3).",
     )
 
-    args = parser.parse_args()
+    args, rest = parser.parse_known_args()
 
     os.environ["SEARCH_BACKEND"] = args.backend
     os.environ["DJANGO_SETTINGS_MODULE"] = "modelsearch.test.settings"
 
     django.setup()
 
-    call_command("test")
+    call_command("test", *rest)
 
 
 if __name__ == "__main__":
