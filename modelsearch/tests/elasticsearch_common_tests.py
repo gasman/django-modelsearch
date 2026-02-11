@@ -280,3 +280,27 @@ class ElasticsearchCommonSearchBackendTests(BackendTests):
     @unittest.expectedFailure  # Elasticsearch does not support ORDER BY expressions
     def test_order_by_expression(self):
         return super().test_order_by_expression()
+
+    @unittest.expectedFailure  # Filtering on related fields is not yet implemented for Elasticsearch
+    def test_filter_on_related_fields_one_to_many(self):
+        return super().test_filter_on_related_fields_one_to_many()
+
+    @unittest.expectedFailure  # Filtering on related fields is not yet implemented for Elasticsearch
+    def test_filter_on_related_fields_foreign_key(self):
+        return super().test_filter_on_related_fields_foreign_key()
+
+    @unittest.expectedFailure  # Filtering on related fields is not yet implemented for Elasticsearch
+    def test_filter_on_related_fields_one_to_one(self):
+        return super().test_filter_on_related_fields_one_to_one()
+
+    @unittest.expectedFailure  # Filtering on related fields is not yet implemented for Elasticsearch
+    def test_filter_on_related_fields_reverse_one_to_one(self):
+        return super().test_filter_on_related_fields_reverse_one_to_one()
+
+    @unittest.expectedFailure  # Filtering on related fields is not yet implemented for Elasticsearch
+    def test_filter_on_related_fields_forward_many_to_many(self):
+        return super().test_filter_on_related_fields_forward_many_to_many()
+
+    @unittest.expectedFailure  # Filtering on related fields is not yet implemented for Elasticsearch
+    def test_filter_on_related_fields_reverse_many_to_many(self):
+        return super().test_filter_on_related_fields_reverse_many_to_many()

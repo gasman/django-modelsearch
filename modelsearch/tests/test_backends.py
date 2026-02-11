@@ -796,6 +796,127 @@ class BackendTests:
         )
         self.assertEqual(set(results), {learning_python})
 
+    def test_filter_on_related_fields_one_to_many(self):
+        results = list(
+            self.backend.search(
+                "king", models.Novel.objects.filter(characters__name="Frodo Baggins")
+            )
+        )
+        self.assertCountEqual(
+            [r.title for r in results],
+            ["The Return of the King"],
+        )
+
+        results = list(
+            self.backend.search(
+                "thrones", models.Novel.objects.filter(characters__name="Frodo Baggins")
+            )
+        )
+        self.assertCountEqual(
+            [r.title for r in results],
+            [],
+        )
+
+    def test_filter_on_related_fields_foreign_key(self):
+        results = list(
+            self.backend.search(
+                "thorin", models.Character.objects.filter(novel__setting="Middle Earth")
+            )
+        )
+        self.assertCountEqual(
+            [r.name for r in results],
+            ["Thorin Oakenshield"],
+        )
+
+        results = list(
+            self.backend.search(
+                "thorin", models.Character.objects.filter(novel__setting="Westeros")
+            )
+        )
+        self.assertCountEqual(
+            [r.name for r in results],
+            [],
+        )
+
+    def test_filter_on_related_fields_one_to_one(self):
+        results = list(
+            self.backend.search(
+                "hobbit", models.Novel.objects.filter(protagonist__name="Bilbo Baggins")
+            )
+        )
+        self.assertCountEqual(
+            [r.title for r in results],
+            ["The Hobbit"],
+        )
+
+        results = list(
+            self.backend.search(
+                "hobbit", models.Novel.objects.filter(protagonist__name="Frodo Baggins")
+            )
+        )
+        self.assertCountEqual(
+            [r.title for r in results],
+            [],
+        )
+
+    def test_filter_on_related_fields_reverse_one_to_one(self):
+        results = list(
+            self.backend.search(
+                "baggins",
+                models.Character.objects.filter(
+                    novel_as_protagonist__title="The Hobbit"
+                ),
+            )
+        )
+        self.assertCountEqual(
+            [r.name for r in results],
+            ["Bilbo Baggins"],
+        )
+
+    def test_filter_on_related_fields_forward_many_to_many(self):
+        results = list(
+            self.backend.search(
+                "hobbit",
+                models.Book.objects.filter(authors__date_of_birth=date(1892, 1, 3)),
+            )
+        )
+        self.assertCountEqual(
+            [r.title for r in results],
+            ["The Hobbit"],
+        )
+        results = list(
+            self.backend.search(
+                "hobbit",
+                models.Book.objects.filter(authors__date_of_birth=date(1920, 1, 2)),
+            )
+        )
+        self.assertCountEqual(
+            [r.title for r in results],
+            [],
+        )
+
+    def test_filter_on_related_fields_reverse_many_to_many(self):
+        results = list(
+            self.backend.search(
+                "tolkien",
+                models.Author.objects.filter(books__publication_date=date(1954, 7, 29)),
+            )
+        )
+        self.assertCountEqual(
+            [r.name for r in results],
+            ["J. R. R. Tolkien"],
+        )
+        results = list(
+            self.backend.search(
+                "tolkien",
+                models.Author.objects.filter(books__publication_date=date(2000, 1, 1)),
+            )
+        )
+        self.assertCountEqual(
+            [r.name for r in results],
+            [],
+        )
+
     # ORDER BY RELEVANCE
 
     def test_order_by_relevance_match_all(self):
