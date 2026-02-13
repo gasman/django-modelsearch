@@ -17,6 +17,12 @@ class Author(index.Indexed, models.Model):
         index.SearchField("name"),
         index.AutocompleteField("name"),
         index.FilterField("date_of_birth"),
+        index.RelatedFields(
+            "books",
+            [
+                index.FilterField("publication_date"),
+            ],
+        ),
     ]
 
     def __str__(self):
@@ -41,7 +47,14 @@ class Book(index.Indexed, models.Model):
         index.AutocompleteField("title"),
         index.FilterField("title"),
         index.FilterField("authors"),
-        index.RelatedFields("authors", Author.search_fields),
+        index.RelatedFields(
+            "authors",
+            [
+                index.SearchField("name"),
+                index.AutocompleteField("name"),
+                index.FilterField("date_of_birth"),
+            ],
+        ),
         index.FilterField("publication_date"),
         index.FilterField("number_of_pages"),
         index.RelatedFields(
@@ -102,6 +115,13 @@ class Character(index.Indexed, models.Model):
                 index.FilterField("title"),
             ],
         ),
+        index.RelatedFields(
+            "novel",
+            [
+                index.FilterField("setting"),
+                index.FilterField("publication_date"),
+            ],
+        ),
     ]
 
     def __str__(self):
@@ -124,12 +144,14 @@ class Novel(Book):
             "characters",
             [
                 index.SearchField("name", boost=0.25),
+                index.FilterField("name"),
             ],
         ),
         index.RelatedFields(
             "protagonist",
             [
                 index.SearchField("name", boost=0.5),
+                index.FilterField("name"),
                 index.FilterField("novel"),
             ],
         ),
