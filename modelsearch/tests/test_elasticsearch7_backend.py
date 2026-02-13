@@ -1247,6 +1247,7 @@ class TestElasticsearch7MappingInheritance(TestCase):
                             "type": "text",
                             "copy_to": ["_all_text", "_all_text_boost_0_5"],
                         },
+                        "name_filter": {"type": "keyword"},
                         "novel_id_filter": {"type": "integer"},
                     },
                 },
@@ -1258,6 +1259,7 @@ class TestElasticsearch7MappingInheritance(TestCase):
                             "type": "text",
                             "copy_to": ["_all_text", "_all_text_boost_0_25"],
                         },
+                        "name_filter": {"type": "keyword"},
                     },
                 },
                 # Inherited
@@ -1340,13 +1342,14 @@ class TestElasticsearch7MappingInheritance(TestCase):
             "searchtests_novel__setting_edgengrams": "Middle Earth",
             "searchtests_novel__protagonist": {
                 "name": "Frodo Baggins",
+                "name_filter": "Frodo Baggins",
                 "novel_id_filter": 4,
             },
             "searchtests_novel__protagonist_id_filter": 8,
             "searchtests_novel__characters": [
-                {"name": "Bilbo Baggins"},
-                {"name": "Frodo Baggins"},
-                {"name": "Gandalf"},
+                {"name": "Bilbo Baggins", "name_filter": "Bilbo Baggins"},
+                {"name": "Frodo Baggins", "name_filter": "Frodo Baggins"},
+                {"name": "Gandalf", "name_filter": "Gandalf"},
             ],
             # Changed
             "_django_content_type": ["searchtests.Novel", "searchtests.Book"],
