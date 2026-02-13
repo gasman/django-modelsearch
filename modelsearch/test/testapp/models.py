@@ -87,11 +87,22 @@ class Book(index.Indexed, models.Model):
         return novel or programming_guide or self
 
 
-class Character(models.Model):
+class Character(index.Indexed, models.Model):
     name = models.CharField(max_length=255)
     novel = models.ForeignKey(
         "Novel", related_name="characters", on_delete=models.CASCADE
     )
+
+    search_fields = [
+        index.SearchField("name"),
+        index.RelatedFields(
+            "novel_as_protagonist",
+            [
+                index.SearchField("title"),
+                index.FilterField("title"),
+            ],
+        ),
+    ]
 
     def __str__(self):
         return self.name
@@ -100,7 +111,10 @@ class Character(models.Model):
 class Novel(Book):
     setting = models.CharField(max_length=255)
     protagonist = models.OneToOneField(
-        Character, related_name="+", null=True, on_delete=models.SET_NULL
+        Character,
+        related_name="novel_as_protagonist",
+        null=True,
+        on_delete=models.SET_NULL,
     )
 
     search_fields = Book.search_fields + [

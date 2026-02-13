@@ -337,6 +337,14 @@ class RelatedFields:
     def get_value(self, obj):
         field = self.get_field(obj.__class__)
 
+        if isinstance(field, OneToOneRel):
+            # Following a reverse one-to-one relation will raise a DoesNotExist exception if there is no related object;
+            # treat this as None instead
+            try:
+                return getattr(obj, self.field_name)
+            except field.related_model.DoesNotExist:
+                return None
+
         if isinstance(field, (RelatedField, ForeignObjectRel)):
             return getattr(obj, self.field_name)
 

@@ -289,6 +289,17 @@ class BackendTests:
             ],
         )
 
+    def test_search_on_related_fields_reverse_one_to_one(self):
+        # "hobbit" is part of the search record for Bilbo Baggins via RelatedFields("novel_as_protagonist")
+        results = self.backend.search("hobbit", models.Character)
+
+        self.assertCountEqual(
+            [r.name for r in results],
+            [
+                "Bilbo Baggins",
+            ],
+        )
+
     def test_search_boosting_on_related_fields(self):
         # Bilbo Baggins is the protagonist of "The Hobbit" but not any of the "Lord of the Rings" novels.
         # As the protagonist has more boost than other characters, "The Hobbit" should always be returned
