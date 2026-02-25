@@ -917,6 +917,45 @@ class BackendTests:
             [],
         )
 
+    def test_missing_filter_field(self):
+        with self.assertRaisesMessage(
+            FilterFieldError,
+            'Cannot filter search results with field "name". Please add index.FilterField("name") to Author.search_fields.',
+        ):
+            list(
+                self.backend.search(
+                    MATCH_ALL, models.Author.objects.filter(name="Isaac Asimov")
+                )
+            )
+
+    def test_missing_filter_field_in_related_fields(self):
+        with self.assertRaisesMessage(
+            FilterFieldError,
+            'Cannot filter search results with field "publication_date". Please add index.FilterField("publication_date") to the RelatedFields("novel_as_protagonist") definition in Character.search_fields.',
+        ):
+            list(
+                self.backend.search(
+                    MATCH_ALL,
+                    models.Character.objects.filter(
+                        novel_as_protagonist__publication_date=date(1937, 9, 21)
+                    ),
+                )
+            )
+
+    def test_missing_related_fields(self):
+        with self.assertRaisesMessage(
+            FilterFieldError,
+            'Cannot filter search results with field "name". Please add a suitable index.RelatedFields definition to Character.search_fields.',
+        ):
+            list(
+                self.backend.search(
+                    MATCH_ALL,
+                    models.Character.objects.filter(
+                        novel__authors__name="J. R. R. Tolkien"
+                    ),
+                )
+            )
+
     # ORDER BY RELEVANCE
 
     def test_order_by_relevance_match_all(self):

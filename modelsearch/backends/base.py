@@ -86,11 +86,12 @@ class BaseSearchQueryCompiler:
 
         return field
 
-    def _get_filter_field_for_column(self, column):
+    def _get_filter_field_path_for_column(self, column):
         """
         Given a `django.db.models.expressions.Col` instance representing a field being filtered on -
-        potentially spanning one or more relations - returns the corresponding `index.FilterField`
-        instance for that field, or `None` if there isn't one.
+        potentially spanning one or more relations - return the list of search_fields definitions
+        leading to that field, consisting of zero or more `RelatedFields` definitions followed by a
+        `FilterField` instance. If no such path exists, raise a FilterFieldError.
         """
         # Get the list of aliases for the joined tables linking column.alias (i.e. the table containing
         # the column we're filtering on) back to the base table.
@@ -111,6 +112,9 @@ class BaseSearchQueryCompiler:
         # The search_fields definition for the table currently under consideration. Initially this is the base model's
         # search_fields list, but as we follow the chain of joins we may descend into RelatedFields definitions.
         search_fields = model.get_search_fields()
+
+        # The sequence of search_fields definitions followed so far.
+        path = []
 
         while table_aliases:
             # Inspect the next join in the chain
@@ -148,6 +152,7 @@ class BaseSearchQueryCompiler:
                         # update `model` and `search_fields` to descend into this RelatedFields definition.
                         model = field.related_model
                         search_fields = search_field.fields
+                        path.append(search_field)
                         break
 
                     if (
@@ -162,11 +167,16 @@ class BaseSearchQueryCompiler:
                                 table_aliases.pop()
                                 model = field.related_model
                                 search_fields = search_field.fields
+                                path.append(search_field)
                                 break
 
                 else:
                     # no matching RelatedFields entry found
-                    return None
+                    field_attname = column.target.attname
+                    raise FilterFieldError(
+                        f'Cannot filter search results with field "{field_attname}". Please add a suitable index.RelatedFields definition to {self.queryset.model.__name__}.search_fields.',
+                        field_name=field_attname,
+                    )
 
         # All joins have now been traversed, and `model` and `search_fields` now correspond to the table being filtered on.
         # Look for a FilterField entry for the column in this search_fields list.
@@ -175,7 +185,20 @@ class BaseSearchQueryCompiler:
                 isinstance(search_field, FilterField)
                 and search_field.get_attname(model) == column.target.attname
             ):
-                return search_field
+                path.append(search_field)
+                return path
+        else:
+            field_attname = column.target.attname
+            if path:
+                # The missing FilterField is somewhere in a (possibly nested) RelatedFields record. Mentioning the deepest-nested one
+                # in the error message should hopefully be sufficient for the developer to identify it...
+                message = f'Cannot filter search results with field "{field_attname}". Please add index.FilterField("{field_attname}") to the RelatedFields("{path[-1].field_name}") definition in {self.queryset.model.__name__}.search_fields.'
+            else:
+                message = f'Cannot filter search results with field "{field_attname}". Please add index.FilterField("{field_attname}") to {self.queryset.model.__name__}.search_fields.'
+            raise FilterFieldError(
+                message,
+                field_name=field_attname,
+            )
 
     def _process_lookup(self, field, lookup, value):
         """
@@ -209,14 +232,8 @@ class BaseSearchQueryCompiler:
 
     def _process_filter(self, column, lookup, value, check_only=False):
         # Get the field
-        field = self._get_filter_field_for_column(column)
-
-        if field is None:
-            field_attname = column.target.attname
-            raise FilterFieldError(
-                f'Cannot filter search results with field "{field_attname}". Please add index.FilterField("{field_attname}") to {self.queryset.model.__name__}.search_fields.',
-                field_name=field_attname,
-            )
+        field_path = self._get_filter_field_path_for_column(column)
+        field = field_path[-1]
 
         # Process the lookup
         if not check_only:
