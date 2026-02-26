@@ -200,13 +200,14 @@ class BaseSearchQueryCompiler:
                 field_name=field_attname,
             )
 
-    def _process_lookup(self, field, lookup, value):
+    def _process_lookup(self, field_path, lookup, value):
         """
         To be implemented by subclasses if they wish to call ``_get_filters_from_queryset`` with
         ``check_only=False``. Returns the data structure corresponding to a filter lookup on an
         individual field.
 
-        :param field: The ``FilterField`` instance for the field being filtered on.
+        :param field_path: The list of ``search_fields`` definitions leading to the ``FilterField`` instance
+        for the field being filtered on, consisting of zero or more ``RelatedFields`` definitions followed by the ``FilterField``.
         :param lookup: The identifier for the type of lookup being performed, such as ``"exact"`` or ``"lt"``.
         :param value: The lookup value.
         """
@@ -233,11 +234,10 @@ class BaseSearchQueryCompiler:
     def _process_filter(self, column, lookup, value, check_only=False):
         # Get the field
         field_path = self._get_filter_field_path_for_column(column)
-        field = field_path[-1]
 
         # Process the lookup
         if not check_only:
-            result = self._process_lookup(field, lookup, value)
+            result = self._process_lookup(field_path, lookup, value)
 
             if result is None:
                 field_attname = column.target.attname

@@ -540,8 +540,34 @@ class ElasticsearchBaseSearchQueryCompiler(BaseSearchQueryCompiler):
 
         return remapped_fields
 
-    def _process_lookup(self, field, lookup, value):
-        column_name = self.mapping.get_field_column_name(field)
+    def _process_lookup(
+        self, field_path, lookup, value, mapping=None, column_name_prefix=""
+    ):
+        if mapping is None:
+            mapping = self.mapping
+
+        field = field_path[0]
+        if isinstance(field, RelatedFields):
+            # Get the lookup for the next field in the path, and wrap it in a {"nested": ...} query
+            related_column_name = mapping.get_field_column_name(field)
+            related_column_name_prefix = column_name_prefix + related_column_name + "."
+            related_model = field.get_field(mapping.model).related_model
+            related_mapping = self.mapping_class(related_model)
+            nested_query = self._process_lookup(
+                field_path[1:],
+                lookup,
+                value,
+                mapping=related_mapping,
+                column_name_prefix=related_column_name_prefix,
+            )
+            return {
+                "nested": {
+                    "path": related_column_name,
+                    "query": nested_query,
+                }
+            }
+
+        column_name = column_name_prefix + mapping.get_field_column_name(field)
 
         if lookup == "exact":
             if isinstance(value, (Query, Subquery)):
@@ -554,7 +580,7 @@ class ElasticsearchBaseSearchQueryCompiler(BaseSearchQueryCompiler):
 
             return {
                 "term": {
-                    column_name: self.mapping._clean_value(value),
+                    column_name: mapping._clean_value(value),
                 }
             }
 
@@ -573,7 +599,7 @@ class ElasticsearchBaseSearchQueryCompiler(BaseSearchQueryCompiler):
         if lookup in ["startswith", "prefix"]:
             return {
                 "prefix": {
-                    column_name: self.mapping._clean_value(value),
+                    column_name: mapping._clean_value(value),
                 }
             }
 
@@ -581,7 +607,7 @@ class ElasticsearchBaseSearchQueryCompiler(BaseSearchQueryCompiler):
             return {
                 "range": {
                     column_name: {
-                        lookup: self.mapping._clean_value(value),
+                        lookup: mapping._clean_value(value),
                     }
                 }
             }
@@ -592,8 +618,8 @@ class ElasticsearchBaseSearchQueryCompiler(BaseSearchQueryCompiler):
             return {
                 "range": {
                     column_name: {
-                        "gte": self.mapping._clean_value(lower),
-                        "lte": self.mapping._clean_value(upper),
+                        "gte": mapping._clean_value(lower),
+                        "lte": mapping._clean_value(upper),
                     }
                 }
             }
@@ -609,7 +635,7 @@ class ElasticsearchBaseSearchQueryCompiler(BaseSearchQueryCompiler):
                 value = list(value)
             return {
                 "terms": {
-                    column_name: [self.mapping._clean_value(val) for val in value],
+                    column_name: [mapping._clean_value(val) for val in value],
                 }
             }
 
