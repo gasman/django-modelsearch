@@ -252,6 +252,59 @@ class ElasticsearchBaseMapping:
             return value.isoformat()
         return value
 
+    def _get_document_field_data(self, field, obj):
+        """
+        Return the data that an individual search_fields entry should contribute to the search document, as
+        a tuple of:
+        - field name
+        - field value
+        - list of values to be added to the _edgengrams field
+        """
+        value = self._clean_value(field.get_value(obj))
+        name = self.get_field_column_name(field)
+
+        if isinstance(field, RelatedFields):
+            if isinstance(value, (models.Manager, models.QuerySet)):
+                nested_docs = []
+                edgengrams = []
+
+                for nested_obj in value.all():
+                    nested_doc, extra_edgengrams = self._get_nested_document(
+                        field.fields, nested_obj
+                    )
+                    nested_docs.append(nested_doc)
+                    edgengrams.extend(extra_edgengrams)
+
+                return name, nested_docs, edgengrams
+            elif isinstance(value, models.Model):
+                nested_doc, edgengrams = self._get_nested_document(field.fields, value)
+                return name, nested_doc, edgengrams
+            elif value is None:
+                return name, None, []
+            else:
+                raise ValueError(f"Unexpected value for RelatedFields: {value}")
+
+        elif isinstance(field, FilterField):
+            if isinstance(value, (models.Manager, models.QuerySet)):
+                value = list(value.values_list("pk", flat=True))
+            elif isinstance(value, models.Model):
+                value = value.pk
+            elif isinstance(value, (list, tuple)):
+                value = [
+                    item.pk if isinstance(item, models.Model) else item
+                    for item in value
+                ]
+            return name, value, []
+
+        elif isinstance(field, AutocompleteField):
+            return name, value, [value]
+
+        elif isinstance(field, SearchField):
+            return name, value, []
+
+        else:
+            raise ValueError(f"Unexpected search_fields entry: {field}")
+
     def _get_nested_document(self, fields, obj):
         doc = {}
         edgengrams = []
@@ -259,12 +312,9 @@ class ElasticsearchBaseMapping:
         mapping = type(self)(model)
 
         for field in fields:
-            value = self._clean_value(field.get_value(obj))
-            doc[mapping.get_field_column_name(field)] = value
-
-            # Check if this field should be added into _edgengrams
-            if isinstance(field, AutocompleteField):
-                edgengrams.append(value)
+            name, value, field_edgengrams = mapping._get_document_field_data(field, obj)
+            doc[name] = value
+            edgengrams.extend(field_edgengrams)
 
         return doc, edgengrams
 
@@ -273,41 +323,9 @@ class ElasticsearchBaseMapping:
         doc = {"pk": str(obj.pk), "_django_content_type": self.get_all_content_types()}
         edgengrams = []
         for field in self.model.get_search_fields():
-            value = self._clean_value(field.get_value(obj))
-
-            if isinstance(field, RelatedFields):
-                if isinstance(value, (models.Manager, models.QuerySet)):
-                    nested_docs = []
-
-                    for nested_obj in value.all():
-                        nested_doc, extra_edgengrams = self._get_nested_document(
-                            field.fields, nested_obj
-                        )
-                        nested_docs.append(nested_doc)
-                        edgengrams.extend(extra_edgengrams)
-
-                    value = nested_docs
-                elif isinstance(value, models.Model):
-                    value, extra_edgengrams = self._get_nested_document(
-                        field.fields, value
-                    )
-                    edgengrams.extend(extra_edgengrams)
-            elif isinstance(field, FilterField):
-                if isinstance(value, (models.Manager, models.QuerySet)):
-                    value = list(value.values_list("pk", flat=True))
-                elif isinstance(value, models.Model):
-                    value = value.pk
-                elif isinstance(value, (list, tuple)):
-                    value = [
-                        item.pk if isinstance(item, models.Model) else item
-                        for item in value
-                    ]
-
-            doc[self.get_field_column_name(field)] = value
-
-            # Check if this field should be added into _edgengrams
-            if isinstance(field, AutocompleteField):
-                edgengrams.append(value)
+            name, value, field_edgengrams = self._get_document_field_data(field, obj)
+            doc[name] = value
+            edgengrams.extend(field_edgengrams)
 
         # Add partials to document
         doc[self.edgengrams_field_name] = edgengrams
