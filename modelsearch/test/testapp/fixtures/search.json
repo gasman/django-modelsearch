@@ -565,5 +565,21 @@
       "name": "Evening yoga",
       "start_time": "19:30"
     }
+  },
+  {
+    "pk": 1,
+    "model": "searchtests.agendaitem",
+    "fields": {
+      "meeting": 2,
+      "topic": "Tea shortage"
+    }
+  },
+  {
+    "pk": 1,
+    "model": "searchtests.speaker",
+    "fields": {
+      "agenda_item": 1,
+      "name": "Mrs Doyle"
+    }
   }
 ]

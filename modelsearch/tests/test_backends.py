@@ -324,6 +324,13 @@ class BackendTests:
             ["The Fellowship of the Ring", "The Two Towers", "The Return of the King"],
         )
 
+    def test_search_on_nested_related_fields(self):
+        results = list(self.backend.search("Doyle", models.Meeting))
+        self.assertCountEqual(
+            [r.name for r in results],
+            ["Stand-up meeting"],
+        )
+
     def test_search_callable_field(self):
         # "Django Two scoops" only mentions "Python" in its "get_programming_language_display"
         # callable field

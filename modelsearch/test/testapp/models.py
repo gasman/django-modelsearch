@@ -216,7 +216,39 @@ class Meeting(index.Indexed, models.Model):
         index.SearchField("name"),
         index.SearchField("start_time"),
         index.FilterField("start_time"),
+        index.RelatedFields(
+            "agenda_items",
+            [
+                index.SearchField("topic"),
+                index.RelatedFields(
+                    "speakers",
+                    [
+                        index.SearchField("name"),
+                    ],
+                ),
+            ],
+        ),
     ]
+
+    def __str__(self):
+        return self.name
+
+
+class AgendaItem(models.Model):
+    meeting = models.ForeignKey(
+        Meeting, related_name="agenda_items", on_delete=models.CASCADE
+    )
+    topic = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.topic
+
+
+class Speaker(models.Model):
+    agenda_item = models.ForeignKey(
+        AgendaItem, related_name="speakers", on_delete=models.CASCADE
+    )
+    name = models.CharField(max_length=255)
 
     def __str__(self):
         return self.name
