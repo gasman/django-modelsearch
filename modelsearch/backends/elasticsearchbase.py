@@ -46,6 +46,11 @@ class Field:
 
 
 class ElasticsearchBaseMapping:
+    """
+    Handles the translation from Django ORM model instances to the data structure stored by Elasticsearch
+    for a given model class.
+    """
+
     type_map = {
         "AutoField": "integer",
         "SmallAutoField": "integer",
@@ -84,15 +89,24 @@ class ElasticsearchBaseMapping:
         self.model = model
 
     def get_parent(self):
+        """Return the mapping for the indexed model that this model inherits from, or None if there isn't one."""
         for base in self.model.__bases__:
             if issubclass(base, Indexed) and issubclass(base, models.Model):
                 return type(self)(base)
 
     def get_field_column_name(self, field):
-        # Fields in derived models get prefixed with their model name, fields
-        # in the root model don't get prefixed at all
-        # This is to prevent mapping clashes in cases where two page types have
-        # a field with the same name but a different type.
+        """
+        Given a search_fields entry, return the name to be used for that field in the Elasticsearch document.
+        This is formed as follows:
+        - For all types other than RelatedFields, take the attribute name of the field
+          (which generally matches the field name, but for a `foo` ForeignKey is `foo_id`)
+        - for RelatedFields, take the given relation name
+        - If the field/relation is defined on a subclass rather than the base model that directly inherits from
+          Indexed, prefix this with "{app_label}_{model_name}__" (to avoid clashes where multiple subclasses have
+          fields with the same name but different types)
+        - for FilterField, suffix this with "_filter"
+        - for AutocompleteField, suffix this with "_edgengrams"
+        """
         root_model = get_model_root(self.model)
         definition_model = field.get_definition_model(self.model)
 
@@ -116,6 +130,9 @@ class ElasticsearchBaseMapping:
             return prefix + field.field_name
 
     def get_boost_field_name(self, boost):
+        """
+        Returns the field name that contains all content with a given boost value.
+        """
         # replace . with _ to avoid issues with . in field names
         boost = str(float(boost)).replace(".", "_")
         return f"_all_text_boost_{boost}"
@@ -150,6 +167,9 @@ class ElasticsearchBaseMapping:
         return content_types
 
     def get_field_mapping(self, field):
+        """
+        Given a search_fields entry, return the (key, value) pair to include in the mapping definition.
+        """
         if isinstance(field, RelatedFields):
             mapping = {"type": "nested", "properties": {}}
             nested_model = field.get_field(self.model).related_model
@@ -189,6 +209,18 @@ class ElasticsearchBaseMapping:
             return self.get_field_column_name(field), mapping
 
     def get_mapping(self):
+        """
+        Return the mapping definition for this model. This is a JSON-ish object with a single top-level property
+        `properties` containing the definition for each property that will be stored in Elasticsearch, namely:
+        - pk - the primary key of the model instance
+        - _django_content_type - the list of content type strings for this model and all superclasses
+        - _edgengrams - all content from fields with an `AutocompleteField`, indexed for partial word matching
+        - one property for each field defined in search_fields, as defined by `get_field_mapping` and with the name
+          determined by `get_field_column_name`
+        - _all_text - a catch-all field containing the content of all SearchFields, for searching across all fields
+        - _all_text_boost_{n} for each distinct boost value that appears in search_fields, containing all content
+          with that boost value
+        """
         # Make field list
         fields = {
             "pk": {"type": "keyword", "store": True},
@@ -236,15 +268,23 @@ class ElasticsearchBaseMapping:
         }
 
     def get_document_id(self, obj):
+        """
+        Return the ID to uniquely identify this document within the index.
+        """
         return str(obj.pk)
 
     def _clean_value(self, value):
-        # Convert types that Elasticsearch can't serialize directly
+        """
+        Convert a value to a JSON-serializable type.
+        """
         if isinstance(value, time):
             return value.isoformat()
         return value
 
     def _get_nested_document(self, fields, obj):
+        """
+        Get the document for a related model instance that is to be nested into the main document.
+        """
         doc = {}
         edgengrams = []
         model = type(obj)
@@ -261,7 +301,9 @@ class ElasticsearchBaseMapping:
         return doc, edgengrams
 
     def get_document(self, obj):
-        # Build document
+        """
+        Get the document to be pushed to Elasticsearch for the given model instance.
+        """
         doc = {"pk": str(obj.pk), "_django_content_type": self.get_all_content_types()}
         edgengrams = []
         for field in self.model.get_search_fields():
