@@ -257,6 +257,16 @@ class BackendTests:
 
         self.assertCountEqual([r.title for r in results], ["The Hobbit"])
 
+    def test_search_on_no_fields(self):
+        # fields=[] should return no results
+        results = self.backend.search(
+            "hobbit",
+            models.Book,
+            fields=[],
+        )
+
+        self.assertCountEqual([r.title for r in results], [])
+
     def test_search_on_unknown_field(self):
         with self.assertRaises(FieldError):
             list(

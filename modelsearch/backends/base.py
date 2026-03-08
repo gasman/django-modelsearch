@@ -751,8 +751,8 @@ class BaseSearchBackend:
 
         - Normalises the ``model_or_queryset`` parameter into a queryset, using ``model.objects.all()`` if a model class
           is provided.
-        - Short-circuits the query compiler if the model is not indexed or the query is an empty string, returning an
-          empty result set in these cases.
+        - Short-circuits the query compiler if the model is not indexed, the query is an empty string, or the fields list is
+          empty, returning an empty result set in these cases.
         - Instantiates the query compiler with the queryset, query string, and any additional keyword arguments.
         - Calls ``check()`` on the query compiler to validate the query.
         - Returns a ``results_class`` instance, passing in the backend and the query compiler.
@@ -776,6 +776,10 @@ class BaseSearchBackend:
 
         # Check that there's still a query string after the clean up
         if query == "":
+            return EmptySearchResults()
+
+        # Check that the `fields` parameter is not an empty list
+        if kwargs.get("fields") is not None and len(kwargs["fields"]) == 0:
             return EmptySearchResults()
 
         # Search
