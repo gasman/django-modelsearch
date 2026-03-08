@@ -768,14 +768,7 @@ class ElasticsearchBaseSearchQueryCompiler(BaseSearchQueryCompiler):
             )
 
     def get_inner_query(self):
-        if self.remapped_fields:
-            fields = self.remapped_fields
-        else:
-            fields = ["_all_text"]
-
-        if len(fields) == 0:
-            # No fields. Return a query that'll match nothing
-            return {"bool": {"must_not": {"match_all": {}}}}
+        fields = self.remapped_fields
 
         # Handle MatchAll and PlainText separately as they were supported
         # before "search query classes" was implemented and we'd like to
