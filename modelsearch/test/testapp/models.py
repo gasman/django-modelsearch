@@ -21,6 +21,7 @@ class Author(index.Indexed, models.Model):
             "books",
             [
                 index.FilterField("publication_date"),
+                index.FilterField("number_of_pages"),
             ],
         ),
     ]

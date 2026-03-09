@@ -917,6 +917,36 @@ class BackendTests:
             [],
         )
 
+    def test_multiple_filters_on_related_fields(self):
+        results = list(
+            self.backend.search(
+                "tolkien",
+                models.Author.objects.filter(
+                    books__publication_date=date(1954, 7, 29),
+                    books__number_of_pages__gt=400,
+                ),
+            )
+        )
+        self.assertCountEqual(
+            [r.name for r in results],
+            ["J. R. R. Tolkien"],
+        )
+        results = list(
+            self.backend.search(
+                "tolkien",
+                models.Author.objects.filter(
+                    # There is no single book that matches both of these criteria, so no results should be returned
+                    # (even though there are matches for the individual criteria)
+                    books__publication_date=date(1954, 7, 29),
+                    books__number_of_pages__lt=400,
+                ),
+            )
+        )
+        self.assertCountEqual(
+            [r.name for r in results],
+            [],
+        )
+
     def test_missing_filter_field(self):
         with self.assertRaisesMessage(
             FilterFieldError,
