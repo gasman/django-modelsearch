@@ -548,7 +548,7 @@ class ElasticsearchBaseSearchQueryCompiler(BaseSearchQueryCompiler):
             }
 
             if value:
-                query = {"bool": {"mustNot": query}}
+                query = {"bool": {"must_not": query}}
 
             return query
 
@@ -596,7 +596,7 @@ class ElasticsearchBaseSearchQueryCompiler(BaseSearchQueryCompiler):
             }
 
     def _process_match_none(self):
-        return {"bool": {"mustNot": {"match_all": {}}}}
+        return {"bool": {"must_not": {"match_all": {}}}}
 
     def _connect_filters(self, filters, connector, negated):
         if filters:
@@ -612,7 +612,7 @@ class ElasticsearchBaseSearchQueryCompiler(BaseSearchQueryCompiler):
                 }
 
             if negated:
-                filter_out = {"bool": {"mustNot": filter_out}}
+                filter_out = {"bool": {"must_not": filter_out}}
 
             return filter_out
 
@@ -703,7 +703,7 @@ class ElasticsearchBaseSearchQueryCompiler(BaseSearchQueryCompiler):
 
         elif isinstance(query, Not):
             return {
-                "bool": {"mustNot": self._compile_query(query.subquery, field, boost)}
+                "bool": {"must_not": self._compile_query(query.subquery, field, boost)}
             }
 
         elif isinstance(query, PlainText):
@@ -731,7 +731,7 @@ class ElasticsearchBaseSearchQueryCompiler(BaseSearchQueryCompiler):
 
         if len(fields) == 0:
             # No fields. Return a query that'll match nothing
-            return {"bool": {"mustNot": {"match_all": {}}}}
+            return {"bool": {"must_not": {"match_all": {}}}}
 
         # Handle MatchAll and PlainText separately as they were supported
         # before "search query classes" was implemented and we'd like to
@@ -751,7 +751,7 @@ class ElasticsearchBaseSearchQueryCompiler(BaseSearchQueryCompiler):
         elif isinstance(self.query, Not):
             return {
                 "bool": {
-                    "mustNot": [
+                    "must_not": [
                         self._compile_query(self.query.subquery, field)
                         for field in fields
                     ]
@@ -1062,7 +1062,7 @@ class ElasticsearchAutocompleteQueryCompilerImpl:
         fields = [Field(field) for field in fields]
         if len(fields) == 0:
             # No fields. Return a query that'll match nothing
-            return {"bool": {"mustNot": {"match_all": {}}}}
+            return {"bool": {"must_not": {"match_all": {}}}}
         elif isinstance(self.query, PlainText):
             return self._compile_plaintext_query(self.query, fields)
         elif isinstance(self.query, MatchAll):
