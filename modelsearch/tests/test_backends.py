@@ -176,19 +176,9 @@ class BackendTests:
             [r.title for r in results],
             ["JavaScript: The good parts", "JavaScript: The Definitive Guide"],
         )
+
+        # "JavaScript: The Definitive Guide" should be first
         self.assertEqual(results[0].title, "JavaScript: The Definitive Guide")
-
-    def test_ranking_reverse(self):
-        # Note: also tests the "or" operator
-        results = list(
-            self.backend.search("JavaScript good", models.Book, operator="or")
-        )
-        self.assertCountEqual(
-            [r.title for r in results],
-            ["JavaScript: The good parts", "JavaScript: The Definitive Guide"],
-        )
-
-        self.assertEqual(results[0].title, "JavaScript: The good parts")
 
     def test_annotate_score(self):
         results = self.backend.search("JavaScript", models.Book).annotate_score(

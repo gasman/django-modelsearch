@@ -18,11 +18,9 @@ class BM25(Func):
     function = "bm25"
     output_field = FloatField()
 
-    def __init__(self, *weights):
-        # Store weights but don't pass them to parent __init__
-        # because Func expects Expression objects, not raw numbers
-        self.weight_values = weights if weights else None
-        super().__init__()  # Call parent with no args
+    def __init__(self):
+        expressions = ()
+        super().__init__(*expressions)
 
     def as_sql(
         self,
@@ -31,22 +29,8 @@ class BM25(Func):
         function=None,
         template=None,
     ):
-        table_name = SQLiteFTSIndexEntry._meta.db_table
-
-        # If no weights provided, use default BM25
-        if not self.weight_values:
-            return f"-bm25({table_name})", []  # added minus in weights
-
-        # Embed weights directly in SQL (SQLite doesn't support params here)
-        weights_str = ", ".join([str(float(w)) for w in self.weight_values])
-        sql = f"-bm25({table_name}, {weights_str})"  # added minus in weights
-
-        return sql, []
-
-    def __repr__(self):
-        if self.weight_values:
-            return f"BM25({', '.join(map(str, self.weight_values))})"
-        return "BM25()"
+        sql, params = f"bm25({SQLiteFTSIndexEntry._meta.db_table})", []
+        return sql, params
 
 
 class LexemeCombinable(Expression):
