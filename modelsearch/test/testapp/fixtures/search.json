@@ -581,5 +581,55 @@
       "agenda_item": 1,
       "name": "Mrs Doyle"
     }
+  },
+  {
+    "pk": 1,
+    "model": "searchtests.mpanimal",
+    "fields": {
+      "name": "Animal",
+      "path": "0001",
+      "depth": 1,
+      "numchild": 2
+    }
+  },
+  {
+    "pk": 2,
+    "model": "searchtests.mpanimal",
+    "fields": {
+      "name": "Mammal",
+      "path": "00010001",
+      "depth": 2,
+      "numchild": 2
+    }
+  },
+  {
+    "pk": 3,
+    "model": "searchtests.mpanimal",
+    "fields": {
+      "name": "Reptile",
+      "path": "00010002",
+      "depth": 2,
+      "numchild": 0
+    }
+  },
+  {
+    "pk": 4,
+    "model": "searchtests.mpanimal",
+    "fields": {
+      "name": "Dog",
+      "path": "000100010001",
+      "depth": 3,
+      "numchild": 0
+    }
+  },
+  {
+    "pk": 5,
+    "model": "searchtests.mpanimal",
+    "fields": {
+      "name": "Cat",
+      "path": "000100010002",
+      "depth": 3,
+      "numchild": 0
+    }
   }
 ]
