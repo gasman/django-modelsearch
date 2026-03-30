@@ -4,6 +4,7 @@ from django.db import models
 from modelcluster.fields import ParentalKey
 from modelcluster.models import ClusterableModel
 from taggit.managers import TaggableManager
+from treebeard.mp_tree import MP_Node
 
 from modelsearch import index
 from modelsearch.queryset import SearchableQuerySetMixin
@@ -272,6 +273,20 @@ class Speaker(models.Model):
         AgendaItem, related_name="speakers", on_delete=models.CASCADE
     )
     name = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.name
+
+
+class MPAnimal(index.Indexed, MP_Node):
+    name = models.CharField(max_length=255)
+
+    search_fields = [
+        index.SearchField("name"),
+        index.FilterField("id"),
+        index.FilterField("path"),
+        index.FilterField("depth"),
+    ]
 
     def __str__(self):
         return self.name
