@@ -5,6 +5,7 @@ from modelcluster.fields import ParentalKey
 from modelcluster.models import ClusterableModel
 from taggit.managers import TaggableManager
 from treebeard.mp_tree import MP_Node
+from treebeard.ns_tree import NS_Node
 
 from modelsearch import index
 from modelsearch.queryset import SearchableQuerySetMixin
@@ -286,6 +287,22 @@ class MPAnimal(index.Indexed, MP_Node):
         index.FilterField("id"),
         index.FilterField("path"),
         index.FilterField("depth"),
+    ]
+
+    def __str__(self):
+        return self.name
+
+
+class NSAnimal(index.Indexed, NS_Node):
+    name = models.CharField(max_length=255)
+
+    search_fields = [
+        index.SearchField("name"),
+        index.FilterField("id"),
+        index.FilterField("lft"),
+        index.FilterField("rgt"),
+        index.FilterField("depth"),
+        index.FilterField("tree_id"),
     ]
 
     def __str__(self):
