@@ -631,5 +631,60 @@
       "depth": 3,
       "numchild": 0
     }
+  },
+  {
+    "pk": 1,
+    "model": "searchtests.nsanimal",
+    "fields": {
+      "name": "Animal",
+      "lft": 1,
+      "rgt": 10,
+      "depth": 1,
+      "tree_id": 1
+    }
+  },
+  {
+    "pk": 2,
+    "model": "searchtests.nsanimal",
+    "fields": {
+      "name": "Mammal",
+      "lft": 2,
+      "rgt": 7,
+      "depth": 2,
+      "tree_id": 1
+    }
+  },
+  {
+    "pk": 3,
+    "model": "searchtests.nsanimal",
+    "fields": {
+      "name": "Reptile",
+      "lft": 8,
+      "rgt": 9,
+      "depth": 2,
+      "tree_id": 1
+    }
+  },
+  {
+    "pk": 4,
+    "model": "searchtests.nsanimal",
+    "fields": {
+      "name": "Dog",
+      "lft": 3,
+      "rgt": 4,
+      "depth": 3,
+      "tree_id": 1
+    }
+  },
+  {
+    "pk": 5,
+    "model": "searchtests.nsanimal",
+    "fields": {
+      "name": "Cat",
+      "lft": 5,
+      "rgt": 6,
+      "depth": 3,
+      "tree_id": 1
+    }
   }
 ]
