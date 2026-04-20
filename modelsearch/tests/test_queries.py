@@ -253,8 +253,7 @@ class TestParseQueryString(SimpleTestCase):
 
         self.assertDictEqual(filters.dict(), {})
         self.assertEqual(
-            repr(query),
-            repr(And([PlainText("recipe"), Phrase("hot cross bun")]))
+            repr(query), repr(And([PlainText("recipe"), Phrase("hot cross bun")]))
         )
 
     def test_multiple_apostrophes_in_words(self):
