@@ -9,6 +9,7 @@ maxdepth: 2
 indexing
 searching
 backends
+custom_backends
 developing
 api
 ```
