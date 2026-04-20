@@ -20,6 +20,7 @@ from modelsearch.backends.base import BaseIndex, BaseSearchBackend
 class NaturalLanguageSearchIndex(BaseIndex):
     def add_model(self, model):
         # Configure the index to accept instances of class `model`
+        pass
 
     def add_items(self, model, items):
         # Add a list of items of class `model` to the index
