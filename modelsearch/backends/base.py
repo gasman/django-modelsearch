@@ -672,6 +672,12 @@ class BaseSearchBackend:
 
     #: The class responsible for rebuilding indexes for this backend. Can be ``None`` if the backend does not require
     #: index rebuilding.
+    #: This class will be instantiated once for each distinct index returned by ``get_index_for_model`` across all indexed models.
+    #: No base class is provided. Instead, this should be a class with the following interface:
+    #:
+    #: - ``__init__(self, index)``: Initializes the rebuilder with the given index.
+    #: - ``start(self)``: Performs any initialization required to start the rebuild process, and returns the index.
+    #: - ``finish(self)``: Performs any finalization required to finish the rebuild process.
     rebuilder_class = None
 
     #: Whether indexing errors should be caught and logged, rather than raised. Catching these errors is
