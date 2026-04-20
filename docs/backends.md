@@ -237,6 +237,4 @@ MODELSEARCH_BACKENDS = {
 
 ## Rolling Your Own
 
-```{eval-rst}
-Django Modelsearch backends implement the interface defined by :py:class:`modelsearch.backends.base.BaseSearchBackend`. At a minimum, the backend's ``search()`` method must return a collection of objects or ``model.objects.none()``. For a fully-featured search backend, examine the Elasticsearch backend code in ``elasticsearchbase.py``.
-```
+See [](modelsearch_custom_backends).
