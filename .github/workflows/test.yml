@@ -31,64 +31,64 @@ jobs:
         include:
           - database: sqlite
             backend: db
-            django-version: ">=4.2,<5.0"
+            django-version: "Django>=4.2,<5.0"
           - database: sqlite
             backend: db
-            django-version: ">=5.2,<6.0"
+            django-version: "Django>=6.0,<6.1"
           - database: sqlite
             backend: db
-            django-version: "==6.0b1"
+            django-version: "git+https://github.com/django/django.git@main#egg=Django"
           - database: postgresql
             backend: db
-            django-version: ">=4.2,<5.0"
+            django-version: "Django>=5.2,<6.0"
           - database: postgresql
             backend: db
-            django-version: ">=5.2,<6.0"
+            django-version: "Django>=6.0,<6.1"
           - database: postgresql
             backend: db
-            django-version: "==6.0b1"
+            django-version: "git+https://github.com/django/django.git@main#egg=Django"
           - database: mysql
             backend: db
-            django-version: ">=4.2,<5.0"
+            django-version: "Django>=4.2,<5.0"
           - database: mysql
             backend: db
-            django-version: ">=5.2,<6.0"
+            django-version: "Django>=6.0,<6.1"
           - database: mysql
             backend: db
-            django-version: "==6.0b1"
+            django-version: "git+https://github.com/django/django.git@main#egg=Django"
           - database: mariadb
             backend: db
-            django-version: ">=4.2,<5.0"
+            django-version: "Django>=5.2,<6.0"
           - database: mariadb
             backend: db
-            django-version: ">=5.2,<6.0"
+            django-version: "Django>=6.0,<6.1"
           - database: mariadb
             backend: db
-            django-version: "==6.0b1"
+            django-version: "git+https://github.com/django/django.git@main#egg=Django"
           - database: sqlite
             backend: elasticsearch7
-            django-version: ">=4.2,<5.0"
+            django-version: "Django>=4.2,<5.0"
           - database: sqlite
             backend: elasticsearch8
-            django-version: ">=5.2,<6.0"
+            django-version: "Django>=5.2,<6.0"
           - database: sqlite
             backend: elasticsearch9
-            django-version: ">=5.2,<6.0"
+            django-version: "Django>=6.0,<6.1"
           - database: sqlite
             backend: elasticsearch9
-            django-version: "==6.0b1"
+            django-version: "git+https://github.com/django/django.git@main#egg=Django"
           - database: sqlite
             backend: opensearch2
             opensearch-version: 2.10.0
-            django-version: ">=4.2,<5.0"
+            django-version: "Django>=5.2,<6.0"
           - database: sqlite
             backend: opensearch3
             opensearch-version: 3.1.0
-            django-version: ">=5.2,<6.0"
+            django-version: "Django>=6.0,<6.1"
           - database: sqlite
             backend: opensearch3
             opensearch-version: 3.1.0
-            django-version: "==6.0b1"
+            django-version: "git+https://github.com/django/django.git@main#egg=Django"
 
     services:
       postgresql:
@@ -211,7 +211,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install "Django${{ matrix.django-version }}"
+          pip install "${{ matrix.django-version }}"
           pip install .[test]
 
           if [[ "${{ matrix.backend }}" == "elasticsearch7" ]]; then
