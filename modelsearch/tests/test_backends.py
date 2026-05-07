@@ -1012,137 +1012,81 @@ class BackendTests:
             )
 
     # TREEBEARD FILTERING TESTS
-    def test_get_ancestors_filter_mp_node(self):
-        dog = models.MPAnimal.objects.get(name="Dog")
-        results = self.backend.search("mammal", dog.get_ancestors())
-        self.assertCountEqual(
-            [r.name for r in results],
-            ["Mammal"],
-        )
-        results = self.backend.search("reptile", dog.get_ancestors())
-        self.assertCountEqual(
-            [r.name for r in results],
-            [],
-        )
+    def test_get_ancestors_filter(self):
+        for model in (models.MPAnimal, models.NSAnimal):
+            with self.subTest(model=model):
+                dog = model.objects.get(name="Dog")
+                results = self.backend.search("mammal", dog.get_ancestors())
+                self.assertCountEqual(
+                    [r.name for r in results],
+                    ["Mammal"],
+                )
+                results = self.backend.search("reptile", dog.get_ancestors())
+                self.assertCountEqual(
+                    [r.name for r in results],
+                    [],
+                )
 
-    def test_get_ancestors_filter_ns_node(self):
-        dog = models.NSAnimal.objects.get(name="Dog")
-        results = self.backend.search("mammal", dog.get_ancestors())
-        self.assertCountEqual(
-            [r.name for r in results],
-            ["Mammal"],
-        )
-        results = self.backend.search("reptile", dog.get_ancestors())
-        self.assertCountEqual(
-            [r.name for r in results],
-            [],
-        )
+    def test_get_children_filter(self):
+        for model in (models.MPAnimal, models.NSAnimal):
+            with self.subTest(model=model):
+                animal = model.objects.get(name="Animal")
+                results = self.backend.search("mammal", animal.get_children())
+                self.assertCountEqual(
+                    [r.name for r in results],
+                    ["Mammal"],
+                )
+                results = self.backend.search("dog", animal.get_children())
+                # dog is a grandchild, not a child, of animal, so shouldn't be returned
+                self.assertCountEqual(
+                    [r.name for r in results],
+                    [],
+                )
 
-    def test_get_children_filter_mp_node(self):
-        animal = models.MPAnimal.objects.get(name="Animal")
-        results = self.backend.search("mammal", animal.get_children())
-        self.assertCountEqual(
-            [r.name for r in results],
-            ["Mammal"],
-        )
-        results = self.backend.search("dog", animal.get_children())
-        # dog is a grandchild, not a child, of animal, so shouldn't be returned
-        self.assertCountEqual(
-            [r.name for r in results],
-            [],
-        )
+    def test_get_descendants_filter(self):
+        for model in (models.MPAnimal, models.NSAnimal):
+            with self.subTest(model=model):
+                animal = model.objects.get(name="Animal")
+                results = self.backend.search("dog", animal.get_descendants())
+                self.assertCountEqual(
+                    [r.name for r in results],
+                    ["Dog"],
+                )
+                reptile = models.MPAnimal.objects.get(name="Reptile")
+                results = self.backend.search("dog", reptile.get_descendants())
+                self.assertCountEqual(
+                    [r.name for r in results],
+                    [],
+                )
 
-    def test_get_children_filter_ns_node(self):
-        animal = models.NSAnimal.objects.get(name="Animal")
-        results = self.backend.search("mammal", animal.get_children())
-        self.assertCountEqual(
-            [r.name for r in results],
-            ["Mammal"],
-        )
-        results = self.backend.search("dog", animal.get_children())
-        # dog is a grandchild, not a child, of animal, so shouldn't be returned
-        self.assertCountEqual(
-            [r.name for r in results],
-            [],
-        )
+    def test_get_siblings_filter(self):
+        for model in (models.MPAnimal, models.NSAnimal):
+            with self.subTest(model=model):
+                dog = model.objects.get(name="Dog")
+                results = self.backend.search("cat", dog.get_siblings())
+                self.assertCountEqual(
+                    [r.name for r in results],
+                    ["Cat"],
+                )
+                results = self.backend.search("mammal", dog.get_siblings())
+                self.assertCountEqual(
+                    [r.name for r in results],
+                    [],
+                )
 
-    def test_get_descendants_filter_mp_node(self):
-        animal = models.MPAnimal.objects.get(name="Animal")
-        results = self.backend.search("dog", animal.get_descendants())
-        self.assertCountEqual(
-            [r.name for r in results],
-            ["Dog"],
-        )
-        reptile = models.MPAnimal.objects.get(name="Reptile")
-        results = self.backend.search("dog", reptile.get_descendants())
-        self.assertCountEqual(
-            [r.name for r in results],
-            [],
-        )
-
-    def test_get_descendants_filter_ns_node(self):
-        animal = models.NSAnimal.objects.get(name="Animal")
-        results = self.backend.search("dog", animal.get_descendants())
-        self.assertCountEqual(
-            [r.name for r in results],
-            ["Dog"],
-        )
-        reptile = models.NSAnimal.objects.get(name="Reptile")
-        results = self.backend.search("dog", reptile.get_descendants())
-        self.assertCountEqual(
-            [r.name for r in results],
-            [],
-        )
-
-    def test_get_siblings_filter_mp_node(self):
-        dog = models.MPAnimal.objects.get(name="Dog")
-        results = self.backend.search("cat", dog.get_siblings())
-        self.assertCountEqual(
-            [r.name for r in results],
-            ["Cat"],
-        )
-        results = self.backend.search("mammal", dog.get_siblings())
-        self.assertCountEqual(
-            [r.name for r in results],
-            [],
-        )
-
-    def test_get_siblings_filter_ns_node(self):
-        dog = models.NSAnimal.objects.get(name="Dog")
-        results = self.backend.search("cat", dog.get_siblings())
-        self.assertCountEqual(
-            [r.name for r in results],
-            ["Cat"],
-        )
-        results = self.backend.search("mammal", dog.get_siblings())
-        self.assertCountEqual(
-            [r.name for r in results],
-            [],
-        )
-
-    def test_get_root_nodes_filter_mp_node(self):
-        results = self.backend.search("animal", models.MPAnimal.get_root_nodes())
-        self.assertCountEqual(
-            [r.name for r in results],
-            ["Animal"],
-        )
-        results = self.backend.search("mammal", models.MPAnimal.get_root_nodes())
-        self.assertCountEqual(
-            [r.name for r in results],
-            [],
-        )
-
-    def test_get_root_nodes_filter_ns_node(self):
-        results = self.backend.search("animal", models.NSAnimal.get_root_nodes())
-        self.assertCountEqual(
-            [r.name for r in results],
-            ["Animal"],
-        )
-        results = self.backend.search("mammal", models.NSAnimal.get_root_nodes())
-        self.assertCountEqual(
-            [r.name for r in results],
-            [],
-        )
+    def test_get_root_nodes_filter(self):
+        for model in (models.MPAnimal, models.NSAnimal):
+            with self.subTest(model=model):
+                results = self.backend.search("animal", model.get_root_nodes())
+                self.assertCountEqual(
+                    [r.name for r in results],
+                    ["Animal"],
+                )
+                results = self.backend.search("mammal", model.get_root_nodes())
+                self.assertCountEqual(
+                    [r.name for r in results],
+                    [],
+                )
 
     # ORDER BY RELEVANCE
 
