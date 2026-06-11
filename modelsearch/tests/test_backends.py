@@ -35,12 +35,7 @@ from modelsearch.query import (
 from modelsearch.test.testapp import models
 
 
-class BackendTests:
-    # To test a specific backend, subclass BackendTests and define self.backend_path.
-    backend_path = None
-
-    fixtures = ["search"]
-
+class BackendTestSetupMixin:
     def setUp(self):
         # Search MODELSEARCH_BACKENDS for an entry that uses the given backend path
         for backend_name, backend_conf in settings.MODELSEARCH_BACKENDS.items():
@@ -55,7 +50,7 @@ class BackendTests:
             )
 
         # HACK: This is a hack to delete all the index entries that may be present in the test database before each test is run.
-        IndexEntry.objects.all().delete()
+        self.clear_index_entries()
 
         management.call_command(
             "rebuild_modelsearch_index",
@@ -63,6 +58,16 @@ class BackendTests:
             stdout=StringIO(),
             chunk_size=50,
         )
+
+    def clear_index_entries(self):
+        IndexEntry.objects.all().delete()
+
+
+class BackendTests(BackendTestSetupMixin):
+    # To test a specific backend, subclass BackendTests and define self.backend_path.
+    backend_path = None
+
+    fixtures = ["search"]
 
     # SEARCH TESTS
 
@@ -172,13 +177,22 @@ class BackendTests:
         results = list(
             self.backend.search("JavaScript Definitive", models.Book, operator="or")
         )
-        self.assertCountEqual(
+        # "JavaScript: The Definitive Guide" should be first
+        self.assertEqual(
+            [r.title for r in results],
+            ["JavaScript: The Definitive Guide", "JavaScript: The good parts"],
+        )
+
+        self.assertEqual(results[0].title, "JavaScript: The Definitive Guide")
+
+        results = list(
+            self.backend.search("JavaScript good", models.Book, operator="or")
+        )
+        # "JavaScript: The good parts" should be first
+        self.assertEqual(
             [r.title for r in results],
             ["JavaScript: The good parts", "JavaScript: The Definitive Guide"],
         )
-
-        # "JavaScript: The Definitive Guide" should be first
-        self.assertEqual(results[0].title, "JavaScript: The Definitive Guide")
 
     def test_annotate_score(self):
         results = self.backend.search("JavaScript", models.Book).annotate_score(
