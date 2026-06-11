@@ -45,6 +45,7 @@ jobs:
       - name: Send Slack notification on failure
         if: steps.test.outcome == 'failure'
         run: |
+          pip install "requests"
           python .github/report_nightly_build_failure.py
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
