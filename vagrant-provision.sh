@@ -42,7 +42,7 @@ echo $BASHRC_LINE_VENV >> $BASHRC
 
 # Elasticsearch 7
 ES7_VERSION=7.17.29
-ES7_DOWNLOAD_FILE=elasticsearch-$ES7_VERSION-linux-`uname -p`.tar.gz
+ES7_DOWNLOAD_FILE=elasticsearch-$ES7_VERSION-linux-`uname -m`.tar.gz
 ES7_DOWNLOAD_URL=https://artifacts.elastic.co/downloads/elasticsearch/$ES7_DOWNLOAD_FILE
 ES7_ROOT=/home/$DEV_USER/elasticsearch-$ES7_VERSION
 ES7_VIRTUALENV_DIR=/home/$DEV_USER/.virtualenvs/modelsearches7
@@ -66,7 +66,7 @@ su - $DEV_USER -c "$ES70_PIP install -e $PROJECT_DIR[test]"
 
 # Elasticsearch 8
 ES8_VERSION=8.19.3
-ES8_DOWNLOAD_FILE=elasticsearch-$ES8_VERSION-linux-`uname -p`.tar.gz
+ES8_DOWNLOAD_FILE=elasticsearch-$ES8_VERSION-linux-`uname -m`.tar.gz
 ES8_DOWNLOAD_URL=https://artifacts.elastic.co/downloads/elasticsearch/$ES8_DOWNLOAD_FILE
 ES8_ROOT=/home/$DEV_USER/elasticsearch-$ES8_VERSION
 ES8_VIRTUALENV_DIR=/home/$DEV_USER/.virtualenvs/modelsearches8
@@ -82,7 +82,7 @@ su - $DEV_USER -c "$ES8_PIP install -e $PROJECT_DIR[test]"
 
 # Elasticsearch 9
 ES9_VERSION=9.1.4
-ES9_DOWNLOAD_FILE=elasticsearch-$ES9_VERSION-linux-`uname -p`.tar.gz
+ES9_DOWNLOAD_FILE=elasticsearch-$ES9_VERSION-linux-`uname -m`.tar.gz
 ES9_DOWNLOAD_URL=https://artifacts.elastic.co/downloads/elasticsearch/$ES9_DOWNLOAD_FILE
 ES9_ROOT=/home/$DEV_USER/elasticsearch-$ES9_VERSION
 ES9_VIRTUALENV_DIR=/home/$DEV_USER/.virtualenvs/modelsearches9
@@ -96,7 +96,7 @@ su - $DEV_USER -c "python -m venv $ES9_VIRTUALENV_DIR"
 su - $DEV_USER -c "$ES9_PIP install 'elasticsearch>=9.0.0,<10.0.0'"
 su - $DEV_USER -c "$ES9_PIP install -e $PROJECT_DIR[test]"
 
-if [[ "$(uname -p)" == "aarch64" ]]; then
+if [[ "$(uname -m)" == "aarch64" ]]; then
     OPENSEARCH_ARCH="arm64"
 else
     OPENSEARCH_ARCH="x64"
