@@ -40,7 +40,7 @@ jobs:
         id: test
         continue-on-error: true
         run: |
-          DATABASE_URL="sqlite:///test_modelsearch.sqlite" ./runtests.py --backend db && DATABASE_URL="postgresql://user:password@localhost:5432/testdb" ./runtests.py --backend db
+          DATABASE_URL="sqlite:///test_modelsearch.sqlite" python ./runtests.py --backend db && DATABASE_URL="postgresql://user:password@localhost:5432/testdb" python ./runtests.py --backend db
 
       - name: Send Slack notification on failure
         if: steps.test.outcome == 'failure'
